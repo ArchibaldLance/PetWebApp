@@ -1,6 +1,15 @@
-import { NavLink } from 'react-router-dom';
+import { supabase } from "../lib/supabase";
+import { NavLink, Outlet } from "react-router-dom";
 
-export default function Layout({ children }) {
+async function handleLogout() {
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error("Kilépési hiba:", error.message);
+  }
+}
+
+export default function Layout() {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -17,29 +26,35 @@ export default function Layout({ children }) {
           <nav className="site-nav" aria-label="Fő navigáció">
             <NavLink
               to="/"
-              className={({ isActive }) => (isActive ? 'active' : '')}
+              className={({ isActive }) => (isActive ? "active" : "")}
             >
               Főoldal
             </NavLink>
 
             <NavLink
               to="/admin"
-              className={({ isActive }) => (isActive ? 'active' : '')}
+              className={({ isActive }) => (isActive ? "active" : "")}
             >
               Admin
             </NavLink>
 
             <NavLink
-              to="/admin/new"
-              className={({ isActive }) => (isActive ? 'active' : '')}
+              to="/animals/new"
+              className={({ isActive }) => (isActive ? "active" : "")}
             >
               Új állat
             </NavLink>
+
+            <button type="button" onClick={handleLogout}>
+              Kilépés
+            </button>
           </nav>
         </div>
       </header>
 
-      <main className="main-content">{children}</main>
+      <main className="main-content">
+        <Outlet />
+      </main>
 
       <footer className="site-footer">
         <div className="site-footer-inner">

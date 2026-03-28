@@ -8,6 +8,7 @@ const animalColumns = `
   color,
   sex,
   image_url,
+  owner_id,
   created_at
 `;
 
@@ -48,7 +49,7 @@ function buildAnimalPayload(animalData) {
     weight: normalizeWeightValue(animalData.weight),
     color: normalizeTextValue(animalData.color),
     sex: normalizeTextValue(animalData.sex),
-    image_url: normalizeTextValue(animalData.image_url)
+    image_url: normalizeTextValue(animalData.image_url),
   };
 }
 
@@ -56,6 +57,21 @@ function throwSupabaseError(error, fallbackMessage) {
   if (error) {
     throw new Error(error.message || fallbackMessage);
   }
+}
+
+async function getCurrentUserId() {
+  const { data, error } = await supabase.auth.getUser();
+
+  throwSupabaseError(
+    error,
+    'Nem sikerült lekérni a bejelentkezett felhasználót.'
+  );
+
+  if (!data?.user?.id) {
+    throw new Error('Nincs bejelentkezett felhasználó.');
+  }
+
+  return data.user.id;
 }
 
 export async function getAnimals() {
@@ -94,10 +110,16 @@ export async function getAnimalById(animalId) {
 
 export async function createAnimal(animalData) {
   const payload = buildAnimalPayload(animalData);
+  const ownerId = await getCurrentUserId();
 
   const { data, error } = await supabase
     .from('animals')
-    .insert([payload])
+    .insert([
+      {
+        ...payload,
+        owner_id: ownerId,
+      },
+    ])
     .select(animalColumns)
     .single();
 
@@ -124,10 +146,7 @@ export async function updateAnimal(animalId, animalData) {
 export async function deleteAnimal(animalId) {
   const animalToDelete = await getAnimalById(animalId);
 
-  const { error } = await supabase
-    .from('animals')
-    .delete()
-    .eq('id', animalId);
+  const { error } = await supabase.from('animals').delete().eq('id', animalId);
 
   throwSupabaseError(error, 'Nem sikerült törölni az állatot.');
 
